@@ -3,7 +3,7 @@
 # requires play command from sox package: http://sox.sourceforge.net/ 
 
 makeBeep () {
-  for i in $(seq 1 $4);
+  for i in $(seq 1 ${4:-1});
   do
     play -n synth `bc -l <<< "$2/1000"` sine $1 &> /dev/null
     sleep `bc -l <<< "$2/1000"`

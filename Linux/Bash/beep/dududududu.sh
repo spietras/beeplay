@@ -5,7 +5,7 @@
 # Credit : https://github.com/TheKiwi5000/BeepingPenguin/blob/master/sandstorm.sh
 
 makeBeep () {
-  beep -f $1 -l $2 -D $3 -r $4
+  beep -f $1 -l $2 -D $3 -r ${4:-1}
 }
 
 makeBeep        440        40        80         4
