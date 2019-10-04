@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# requires beep: http://www.johnath.com/beep/
+
 # Credit : https://github.com/TheKiwi5000/BeepingPenguin/blob/master/sandstorm.sh
 
 makeBeep () {

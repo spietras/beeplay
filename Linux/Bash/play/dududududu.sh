@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# requires play command from sox package: http://sox.sourceforge.net/ 
+
 makeBeep () {
   for i in $(seq 1 $4);
   do
