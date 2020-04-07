@@ -1,4 +1,4 @@
-# Darude-Sandstorm-Beep
+# darude-sandstorm-beep
 
 potrolluj na lekcji informatyki
 
