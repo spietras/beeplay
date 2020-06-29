@@ -29,8 +29,7 @@ listen to music the way your machine hears it
     |:--------------------:|:--------------------------:|
     | sh                   |  :heavy_check_mark:        |
     | bash                 |  :heavy_check_mark:        |
-    | C                    |  :white_check_mark:        |
-    | C++                  |  :white_check_mark:        |
+    | C                    |  :heavy_check_mark:        |
     | Python               |  :grey_question:           |
     | Java                 |  :grey_question:           |
 
