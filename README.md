@@ -23,12 +23,6 @@ listen to music the way your machine hears it
 
 # Supported Platforms:
 
-- Legend:
-    - :heavy_check_mark: - Done
-    - :white_check_mark: - Working on
-    - :grey_question: - Don't know if possible yet
-    - :heavy_multiplication_x: - Not possible
-
 - Linux:
     - sh :heavy_check_mark:
     - C :heavy_check_mark:
@@ -37,3 +31,9 @@ listen to music the way your machine hears it
 
 - Windows:
     - TODO
+
+Legend:
+- :heavy_check_mark: - Done
+- :white_check_mark: - Working on
+- :grey_question: - Don't know if possible yet
+- :heavy_multiplication_x: - Not possible
