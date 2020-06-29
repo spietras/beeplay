@@ -14,7 +14,7 @@ listen to music the way your machine hears it
 
     For example: 
     ```
-    ./play.sh Linux/sh/beep sheets/darude_sandstorm.txt
+    ./play.sh Linux/sh sheets/darude_sandstorm.txt
     ```
 
 - On Windows:
