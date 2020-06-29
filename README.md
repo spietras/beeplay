@@ -8,9 +8,14 @@ listen to music the way your machine hears it
 
 - On Linux:
     
-    ```./play.sh platform sheet```
+    ```
+    ./play.sh platform sheet
+    ```
 
-    Example: ```./play.sh Linux/bash/beep sheets/darude_sandstorm.txt```
+    For example: 
+    ```
+    ./play.sh Linux/bash/beep sheets/darude_sandstorm.txt
+    ```
 
 - On Windows:
 
