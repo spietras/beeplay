@@ -23,25 +23,17 @@ listen to music the way your machine hears it
 
 # Supported Platforms:
 
-- Linux:
+- Legend:
+    - :heavy_check_mark: - Done
+    - :white_check_mark: - Working on
+    - :grey_question: - Don't know if possible yet
+    - :heavy_multiplication_x: - Not possible
 
-    |         Name         |           Status           |
-    |:--------------------:|:--------------------------:|
-    | sh                   |  :heavy_check_mark:        |
-    | C                    |  :heavy_check_mark:        |
-    | Python               |  :grey_question:           |
-    | Java                 |  :grey_question:           |
+- Linux:
+    - sh :heavy_check_mark:
+    - C :heavy_check_mark:
+    - Python :grey_question:
+    - Java :grey_question:
 
 - Windows:
-
-    TODO
-
-
-- Legend:
-
-    |           Status           |           Meaning            |
-    |:--------------------------:|:----------------------------:|
-    |  :heavy_check_mark:        |  Done                        |
-    |  :white_check_mark:        |  Working on                  |
-    |  :grey_question:           |  Don't know if possible yet  |
-    |  :heavy_multiplication_x:  |  Not possible                |
+    - TODO
