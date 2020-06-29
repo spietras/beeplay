@@ -14,7 +14,7 @@ listen to music the way your machine hears it
 
     For example: 
     ```
-    ./play.sh Linux/bash/beep sheets/darude_sandstorm.txt
+    ./play.sh Linux/sh/beep sheets/darude_sandstorm.txt
     ```
 
 - On Windows:
@@ -28,7 +28,6 @@ listen to music the way your machine hears it
     |         Name         |           Status           |
     |:--------------------:|:--------------------------:|
     | sh                   |  :heavy_check_mark:        |
-    | bash                 |  :heavy_check_mark:        |
     | C                    |  :heavy_check_mark:        |
     | Python               |  :grey_question:           |
     | Java                 |  :grey_question:           |

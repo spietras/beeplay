@@ -29,21 +29,28 @@ then
     exit 3
 fi
 
-if ! [ -x "$(command -v play)" ]
+if [ -x "$(command -v play)" ]
 then
-    echo "play is not installed"
+    makeBeep () 
+    {
+        for i in $(seq 1 "${4:-1}");
+        do
+            play -n synth "$(echo "$2/1000" | bc -l)" sine "$1" >/dev/null 2>&1
+            sleep "$(echo "$3/1000" | bc -l)"
+        done
+    }
+elif [ -x "$(command -v beep)" ]
+then
+    makeBeep () 
+    {
+        beep -f "$1" -l "$2" -D "$3" -r "${4:-1}"
+    }
+else
+    echo "neither play nor beep is installed"
     print_usage
     exit 4
 fi
 
-makeBeep () {
-  for i in $(seq 1 "${4:-1}");
-  do
-    play -n synth "$(echo "$2/1000" | bc -l)" sine "$1" >/dev/null 2>&1
-    sleep "$(echo "$3/1000" | bc -l)"
-  done
-}
-
 while read -r frequency length delay repeats; do
-  makeBeep "$frequency" "$length" "$delay" "$repeats"
+    makeBeep "$frequency" "$length" "$delay" "$repeats"
 done < "$1"
