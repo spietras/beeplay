@@ -21,4 +21,20 @@ sheet="$2"
 
 platform_script="$platform_path/play.sh"
 
+if [ ! -x "$platform_script" ]
+then
+    echo "You don't have rights to execute $platform_script"
+    print_usage
+    exit 1
+fi
+
 ./"$platform_script" "$sheet"
+
+exitval="$?"
+
+if ! [ "$exitval" -eq 0 ]
+then
+    echo "Running $platform_script failed"
+    print_usage
+fi
+exit "$exitval"
