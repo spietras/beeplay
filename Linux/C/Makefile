@@ -1,18 +1,48 @@
-TARGET        = play
+.POSIX:
 
-TOOTDIR       = toot
+TARGET        	= play
+LIB			  	= playlib
 
-CFLAGS        += -I$(TOOTDIR)
+LIBNAME		  	= libplay.a
 
-OBJECTS       = play.o $(TOOTDIR)/toot.o 
+SRCDIR 		  	= src
+OBJDIR		  	= obj
+BINDIR		  	= bin
+LIBDIR        	= lib
+INCLUDEDIR		= include
 
-$(TARGET): $(OBJECTS)
-	$(CC) $^ -o $@
+CC     			= cc
+CFLAGS			= -Wall -Wextra -ansi -pedantic
 
-play.o: $(TOOTDIR)/toot.h 
-$(TOOTDIR)/toot.o: $(TOOTDIR)/toot.h 
+all: $(BINDIR)/$(TARGET)
+	@echo "Building executable completed. It is available at: $(BINDIR)/$(TARGET)"
 
-.PHONY: clean
+lib: $(LIB)/$(LIBDIR)/$(LIBNAME)
+	@echo "Building library completed. It is available at: $(LIB)/$(LIBDIR)/$(LIBNAME)"
+
+$(BINDIR)/$(TARGET): $(OBJDIR)/main.o $(LIB)/$(LIBDIR)/$(LIBNAME)
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) $^ -o $@
+
+$(LIB)/$(LIBDIR)/$(LIBNAME): $(LIB)/$(OBJDIR)/play.o $(LIB)/$(OBJDIR)/toot.o
+	@mkdir -p $(@D)
+	@ar -r $@ $^ >/dev/null 2>&1
+
+$(LIB)/$(OBJDIR)/play.o: $(LIB)/$(SRCDIR)/play.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -I$(LIB)/$(INCLUDEDIR) -c $^ -o $@
+
+$(LIB)/$(OBJDIR)/toot.o: $(LIB)/$(SRCDIR)/toot.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c $^ -o $@
+
+$(OBJDIR)/main.o: $(SRCDIR)/main.c
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -I$(LIB)/$(INCLUDEDIR) -c $^ -o $@
+
 clean:
-	rm -f $(OBJECTS)
-	rm -f $(TARGET)
+	@rm -rf $(BINDIR)
+	@rm -rf $(OBJDIR)
+	@rm -rf $(LIB)/$(LIBDIR)
+	@rm -rf $(LIB)/$(OBJDIR)
+	@echo 'Cleanup complete'
