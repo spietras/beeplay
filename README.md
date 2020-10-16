@@ -43,3 +43,8 @@ Legend:
 Support a lot of platforms and for each be able to use ```beep-player``` as:
 - a binary that can be compiled and run using only the platform's tooling (e.g. compile with ```gcc``` and run from terminal)
 - a library that can be used in code by the platform's language (e.g. use it natively in your ```C``` application)
+
+# TODO
+
+- reorganize directory structure into libraries and "frontends"
+- better Windows support
