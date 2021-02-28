@@ -32,7 +32,7 @@ Also see ```beeplay.sh``` for an example of usage in a more practical setting.
 You can test your sheet files with ```beeplay.sh``` that uses ```beep``` command to play notes:
 
 ```sh
-./play.sh [-d] SHEET
+./beeplay.sh [-d] SHEET
 ```
 
 - ```-d, --default``` - use the default terminal bell instead of [```beep```](http://www.johnath.com/beep/)
