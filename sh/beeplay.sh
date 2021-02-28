@@ -1,20 +1,6 @@
 #!/bin/sh
 
-# Error codes
-
-ERRNO_SHEET_ARG_ABSENT=1
-ERRNO_SHEET_FILE_NONEXISTENT=2
-ERRNO_SHEET_FILE_UNREADABLE=3
-
 # Helper functions 
-
-print_error()
-{
-    # Print error message
-    # $1    - message to print
-
-    printf "Error: %s\n\n" "$1"
-}
 
 print_usage() 
 {
@@ -30,36 +16,16 @@ EOF
 
 # Parse args
 
+function='beep_note'
+
 for arg in "$@"; do
     case $arg in
-        -d|--default) DEFAULT=1 ;;
+        -d|--default) function='' ;;
         -h|--help) print_usage; exit;;
         *) set -- "$@" "$arg" ;;  # Leave positional arguments
     esac
     shift
 done
-
-# Test args correctness
-
-if [ "$#" -lt 1 ]
-then
-    print_error "Path to the sheet file is necessary"
-    print_usage; exit "$ERRNO_SHEET_ARG_ABSENT"
-fi
-
-SHEET="$1"
-
-if ! [ -e "$SHEET" ]
-then
-    print_error "Sheet file $SHEET does not exist"
-    print_usage; exit "$ERRNO_SHEET_FILE_NONEXISTENT"
-fi
-
-if ! [ -r "$SHEET" ]
-then
-    print_error "Sheet file $SHEET is not readable"
-    print_usage; exit "$ERRNO_SHEET_FILE_UNREADABLE"
-fi
 
 # Custom single note function
 beep_note()
@@ -68,23 +34,21 @@ beep_note()
     # $1    - frequency in Hz
     # $2    - length in ms
 
-    FREQUENCY="$1"
-    LENGTH="$2"
+    frequency="$1"
+    length="$2"
 
-    beep -f "$FREQUENCY" -l "$LENGTH"
+    beep -f "$frequency" -l "$length"
 }
 
 # Get script directory, works in most simple cases
-SCRIPTDIR="$(dirname -- "$0")"
+scriptdir="$(dirname -- "$0")"
 
 # Import library functions
 # shellcheck disable=SC1090
-. "$SCRIPTDIR"/beeplaylib.sh
+. "$scriptdir/beeplaylib.sh"
 
-# Pipe file to stdin and call beeplay with custom function or default based on -d option
-if [ -z "$DEFAULT" ]
-then
-    beeplay beep_note < "$SHEET"
-else
-    beeplay           < "$SHEET"
-fi;
+# awk is responsible for reading whatever was passed and piping it to beeplay
+# if nothing or '-' is passed then awk reads from stdin
+# system("") is used to flush output after each line so beeplay can read it immediately
+# NF ignores empty lines
+awk 'NF { print $0; system("")}' "$@" | beeplay $function
