@@ -18,7 +18,7 @@ beeplay_bell()
     length="$2"
 
     printf '\a'
-    sleep "$(_beeplay_mili_to_seconds "$length")"  # Simulate sound duration by just waiting
+    sleep "$(_beeplay_mili_to_seconds "$length")"  # simulate sound duration by just waiting
 }
 
 beeplay()
@@ -30,6 +30,8 @@ beeplay()
     ifs_val=' 	
 '  # literal space, literal tab, literal newline
 
+    # second condition is for the last line when stream ends with EOF instead of newline
+    # in that case read returns nonzero but delay should be set
     while IFS="$ifs_val" read -r frequency length delay repeats || [ -n "$delay" ]; do
         # make beep in background and wait
         # background ignores signals (so sound will not be interrupted)
@@ -39,7 +41,6 @@ beeplay()
             i=1
             end="${repeats:-1}"
             while [ $i -le "$end" ]; do
-                #echo "f: $frequency l: $length d: $delay"
                 $play_note "$frequency" "$length" && sleep "$(_beeplay_mili_to_seconds "$delay")"
                 i=$((i+1))
             done

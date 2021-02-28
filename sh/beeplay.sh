@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Helper functions 
+# helper functions 
 
 print_usage() 
 {
@@ -14,7 +14,7 @@ Usage: $0 [-d] SHEET
 EOF
 }
 
-# Parse args
+# parse args
 
 function='beep_note'
 
@@ -27,7 +27,7 @@ for arg in "$@"; do
     shift
 done
 
-# Custom single note function
+# custom single note function
 beep_note()
 {
     # Play single note using beep command
@@ -40,10 +40,10 @@ beep_note()
     beep -f "$frequency" -l "$length"
 }
 
-# Get script directory, works in most simple cases
+# get script directory, works in most simple cases
 scriptdir="$(dirname -- "$0")"
 
-# Import library functions
+# import library functions
 # shellcheck disable=SC1090
 . "$scriptdir/beeplaylib.sh"
 
