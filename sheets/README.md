@@ -13,6 +13,6 @@ For example:
 
 will play the same sound ```4``` times with delay of ```80 ms``` after each sound. The sound has a frequency of ```440 Hz``` and lasts ```40 ms```.
 
-# Provided example sheets:
+# Provided sheets
 
 - Darude - Sandstorm ([source](https://github.com/TheKiwi5000/BeepingPenguin/blob/master/sandstorm.sh))
