@@ -29,11 +29,11 @@ Also see ```beeplay.sh``` for an example of usage in a more practical setting.
 
 # Testing
 
-You can test your sheet files with ```beeplay.sh``` that uses ```beep``` command to play notes:
+You can test your sheet files with ```beeplay.sh``` that uses [```beep``` command](http://www.johnath.com/beep/) to play notes:
 
 ```sh
-./beeplay.sh [-d] SHEET
+./beeplay.sh [-d] [SHEET]
 ```
 
-- ```-d, --default``` - use the default terminal bell instead of [```beep```](http://www.johnath.com/beep/)
-- ```SHEET``` - path to the sheet file
+- ```-d, --default``` - use the default terminal bell instead of ```beep```
+- ```SHEET``` - path to the sheet file (when ```SHEET``` is not given or ```-``` is passed, read standard input)
