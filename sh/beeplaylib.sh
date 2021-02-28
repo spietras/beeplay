@@ -15,10 +15,10 @@ beeplay_bell()
     # $1    - frequency in Hz (ignored)
     # $2    - length in ms
 
-    LENGTH="$2"
+    length="$2"
 
     printf '\a'
-    sleep "$(_beeplay_mili_to_seconds "$LENGTH")"  # Simulate sound duration by just waiting
+    sleep "$(_beeplay_mili_to_seconds "$length")"  # Simulate sound duration by just waiting
 }
 
 beeplay()
@@ -26,20 +26,22 @@ beeplay()
     # Play music from a sheet file
     # $1    - function that plays a single note, given frequency and length (optional, defaults to terminal bell)
 
-    PLAY_NOTE="${1:-beeplay_bell}"
-    IFS_VAL=' \t\n'
+    play_note="${1:-beeplay_bell}"
+    ifs_val=' 	
+'  # literal space, literal tab, literal newline
 
-    while IFS="$IFS_VAL" read -r FREQUENCY LENGTH DELAY REPEATS; do
+    while IFS="$ifs_val" read -r frequency length delay repeats || [ -n "$delay" ]; do
         # make beep in background and wait
         # background ignores signals (so sound will not be interrupted)
         # but main shell exits immediately
         (
             trap '' 1 2 3 6 15
-            I=1
-            END="${REPEATS:-1}"
-            while [ $I -le "$END" ]; do
-                $PLAY_NOTE "$FREQUENCY" "$LENGTH" && sleep "$(_beeplay_mili_to_seconds "$DELAY")"
-                I=$((I+1))
+            i=1
+            end="${repeats:-1}"
+            while [ $i -le "$end" ]; do
+                #echo "f: $frequency l: $length d: $delay"
+                $play_note "$frequency" "$length" && sleep "$(_beeplay_mili_to_seconds "$delay")"
+                i=$((i+1))
             done
         ) & wait
     done
