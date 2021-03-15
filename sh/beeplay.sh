@@ -9,14 +9,14 @@ print_usage()
     cat <<EOF
 Usage: $0 [-d] SHEET
 
-    -d, --default           use the default terminal bell instead of beep
+    -d, --default           use the default terminal bell instead of play
     SHEET                   path to the sheet file
 EOF
 }
 
 # parse args
 
-function='beep_note'
+function='note_play'
 
 for arg in "$@"; do
     case $arg in
@@ -26,19 +26,6 @@ for arg in "$@"; do
     esac
     shift
 done
-
-# custom single note function
-beep_note()
-{
-    # Play single note using beep command
-    # $1    - frequency in Hz
-    # $2    - length in ms
-
-    frequency="$1"
-    length="$2"
-
-    beep -f "$frequency" -l "$length"
-}
 
 # get script directory, works in most simple cases
 scriptdir="$(dirname -- "$0")"
@@ -51,4 +38,4 @@ scriptdir="$(dirname -- "$0")"
 # if nothing or '-' is passed then awk reads from stdin
 # system("") is used to flush output after each line so beeplay can read it immediately
 # NF ignores empty lines
-awk 'NF { print $0; system("")}' "$@" | beeplay $function
+awk 'NF { print $0; system("")}' "$@" | emit_sheet | beeplay $function
