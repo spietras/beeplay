@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# helper functions
+
+print_usage() {
+    # Print script usage
+
+    cat <<EOF
+Usage: $0 [-n NAME]
+
+    -n, --note              note-playing function name (possible values: 'play', 'bell', 'print', default: 'play')
+EOF
+}
+
+# parse args
+
+function='note_play'
+
+for arg in "$@"; do
+    case $arg in
+    -n | --name)
+        shift
+        function="note_$1"
+        ;;
+    -h | --help)
+        print_usage
+        exit
+        ;;
+    *) set -- "$@" "$arg" ;; # leave positional arguments
+    esac
+    shift
+done
+
+# get script directory, works in most simple cases
+scriptdir="$(dirname -- "$0")"
+
+# import library functions
+# shellcheck disable=SC1090
+. "$scriptdir/beeplaylib.sh"
+
+emit_tty | beeplay "$function"
