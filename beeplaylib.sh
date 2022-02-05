@@ -8,7 +8,7 @@ END_CMD='e'
 ################################################## HELPER FUNCTIONS ################################################################
 
 _process_children() {
-    # Gets all children of a process
+    # Get all children of a process
     # $1    - process pid
 
     children=$(ps -o pid= --ppid "$1" | sed 's/\n/ /g')
@@ -20,14 +20,14 @@ _process_children() {
 }
 
 _killall() {
-    # Kills the process and all of its children
+    # Kill the process and all of its children
     # $1    - process pid
 
     kill -13 -- "$1" $(_process_children "$1") >/dev/null 2>&1 # SIGPIPE should not print exit message
 }
 
 _normalize_number() {
-    # Removes all non-numeric characters from string and replaces commas with dots
+    # Remove all non-numeric characters from string and replaces commas with dots
     # $1    - string to process
 
     printf "%s" "$1" | sed 's/\./,/g; 
@@ -40,35 +40,35 @@ _normalize_number() {
 }
 
 _mili_to_seconds() {
-    # Converts miliseconds to seconds
+    # Convert miliseconds to seconds
     # $1    - time value in miliseconds
 
     printf '%s\n' "$1/1000" | bc -sl | tr -d '\n'
 }
 
 _safe_variable_name() {
-    # Converts all non-alphanumeric characters to underscores
+    # Convert all non-alphanumeric characters to underscores
     # $1    - string to process
 
     printf "%s" "$1" | sed 's/[^A-Za-z0-9]/_/g'
 }
 
 _send_cmd() {
-    # Sends command to stdout
+    # Send command to stdout
     # $1    - command
 
     printf '%s\n' "$1"
 }
 
 _send_start() {
-    # Sends start command to stdout
+    # Send start command to stdout
     # $1    - frequency
 
     _send_cmd "$START_CMD $1"
 }
 
 _send_end() {
-    # Sends end command to stdout
+    # Send end command to stdout
     # $1    - frequency
 
     _send_cmd "$END_CMD $1"
@@ -81,29 +81,29 @@ _sleep_infinity() {
 ################################################## BUNDLED EMITTER FUNCTIONS ######################################################
 
 emit_tty() (
-    # Emits note events to stdout
-    # Notes are emitted after the first press of a key associated with a note (CDEFGAB)
+    # Emit note events from terminal to stdout
+    # Notes are emitted after the first press of a key associated with a note
 
     resets=''
 
-    # In icanon mode input is accessible only after pressing Enter
-    # So we should turn it off
+    # in icanon mode input is accessible only after pressing Enter
+    # so we should turn it off
     if [ -t 0 ]; then
-        # Remember tty settings to restore them later
+        # remember tty settings to restore them later
         resets="$resets stty $(stty -g);"
 
-        # Turn off icanon, echo and set timeout so notes can be stopped after key up
+        # turn off icanon, echo and set timeout so notes can be stopped after key up
         stty -icanon -echo min 0 time 1
     fi
 
     if command -v xset >/dev/null; then
-        # Remember x settings to restore them later
+        # remember x settings to restore them later
         read -r x_delay x_rate <<EOF
 $(xset q | sed -n '/auto repeat delay:/s/[^0-9]/ /gp')
 EOF
         resets="$resets xset r rate $x_delay $x_rate;"
 
-        # Turn off keyboard autorepeat delay
+        # turn off keyboard autorepeat delay
         xset r rate 1 33
     fi
 
@@ -112,7 +112,7 @@ EOF
     previous_frequency=''
     while true; do
 
-        # Read one characters at a time until whole symbol is read (some have more characters, e.g. \e)
+        # read one characters at a time until whole symbol is read (some have more characters, e.g. \e)
         key=''
         while [ "$(printf '%s' "$key" | wc -m)" -eq 0 ]; do
             char=''
@@ -168,7 +168,7 @@ EOF
         *) continue ;;
         esac
 
-        # Emit note events only when symbols changed
+        # emit note events only when symbols changed
         if [ "$frequency" != "$previous_frequency" ]; then
             [ -n "$previous_frequency" ] && _send_end "$previous_frequency" # stop previous note
             _send_start "$frequency"                                        # start new note
@@ -176,11 +176,13 @@ EOF
         fi
     done
 
-    # Restore settings
+    # restore settings
     $resets
 )
 
 emit_sheet() {
+    # Emit note events from sheet file to stdout
+
     ifs_val=' 	
 ' # literal space, literal tab, literal newline
 
@@ -211,7 +213,6 @@ note_print() {
 
 note_bell() {
     # Play single note using terminal bell
-    # $1    - frequency in Hz (ignored)
 
     printf '\a'
     _sleep_infinity # block here so the bell plays only once
@@ -242,14 +243,14 @@ beeplay() (
         frequency_safe="$(_safe_variable_name "$frequency")"
         pid="$(eval "echo \$pids_$frequency_safe")"
 
-        # If start command and note is not playing already then start playing it
+        # if start command and note is not playing already then start playing it
         if [ "$command" = "$START_CMD" ] && [ -z "$pid" ]; then
             (
                 trap 'exit' 1 2 3 6 14 15
                 while true; do $play_note "$frequency"; done
             ) &                              # play note in background and repeat (if non-blocking function is used)
             eval "pids_$frequency_safe='$!'" # save pid of launched process, associating it with frequency
-        # If end command and note is playing then kill it
+        # if end command and note is playing then kill it
         elif [ "$command" = "$END_CMD" ] && [ -n "$pid" ]; then
             _killall "$pid" # kill all children just in case
             eval "pids_$frequency_safe=''"
