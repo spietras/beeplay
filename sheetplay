@@ -1,15 +1,14 @@
 #!/bin/sh
 
-# helper functions 
+# helper functions
 
-print_usage() 
-{
+print_usage() {
     # Print script usage
 
     cat <<EOF
-Usage: $0 [-d] SHEET
+Usage: $0 [-n NAME] SHEET
 
-    -d, --default           use the default terminal bell instead of play
+    -n, --note              note-playing function name (possible values: 'play', 'bell', 'print', default: 'play')
     SHEET                   path to the sheet file
 EOF
 }
@@ -20,9 +19,15 @@ function='note_play'
 
 for arg in "$@"; do
     case $arg in
-        -d|--default) function='' ;;
-        -h|--help) print_usage; exit;;
-        *) set -- "$@" "$arg" ;;  # Leave positional arguments
+    -n | --name)
+        shift
+        function="note_$1"
+        ;;
+    -h | --help)
+        print_usage
+        exit
+        ;;
+    *) set -- "$@" "$arg" ;; # leave positional arguments
     esac
     shift
 done
@@ -38,4 +43,4 @@ scriptdir="$(dirname -- "$0")"
 # if nothing or '-' is passed then awk reads from stdin
 # system("") is used to flush output after each line so beeplay can read it immediately
 # NF ignores empty lines
-awk 'NF { print $0; system("")}' "$@" | emit_sheet | beeplay $function
+awk 'NF { print $0; system("")}' "$@" | emit_sheet | beeplay "$function"
