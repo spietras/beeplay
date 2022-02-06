@@ -236,7 +236,7 @@ EOF
         xset r rate 1 33
     fi
 
-    trap 'rc=$?; trap "" 1 2 3 6 14 15; '"$resets"' return $rc' 1 2 3 6 14 15
+    trap 'rc=$?; trap "" HUP INT QUIT ABRT ALRM TERM; '"$resets"' return $rc' HUP INT QUIT ABRT ALRM TERM
 
     previous_frequency=''
     while true; do
@@ -322,7 +322,7 @@ beeplay() (
 ' # literal space, literal tab, literal newline
 
     ppid="$(exec sh -c 'echo "$PPID"')" # get subshell pid
-    trap 'rc=$?; trap "" 1 2 3 6 14 15; _killall "$ppid"; return $rc' 1 2 3 6 14 15
+    trap 'rc=$?; trap "" HUP INT QUIT ABRT ALRM TERM; _killall "$ppid"; return $rc' HUP INT QUIT ABRT ALRM TERM
 
     while IFS="$ifs_val" read -r command frequency; do # read until the end of stream
         frequency="$(_normalize_number "$frequency")"
@@ -332,7 +332,7 @@ beeplay() (
         # if start command and note is not playing already then start playing it
         if [ "$command" = "$START_CMD" ] && [ -z "$pid" ]; then
             (
-                trap 'exit' 1 2 3 6 14 15
+                trap 'exit' HUP INT QUIT ABRT ALRM TERM
                 while true; do $play_note "$frequency"; done
             ) &                              # play note in background and repeat (if non-blocking function is used)
             eval "pids_$frequency_safe='$!'" # save pid of launched process, associating it with frequency
