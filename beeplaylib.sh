@@ -7,6 +7,70 @@ END_CMD='e'
 
 ################################################## HELPER FUNCTIONS ################################################################
 
+_is_osx() {
+    # Check if OS is OSX
+
+    # see https://stackoverflow.com/a/3466183/12861599
+    [ "$(uname -s)" = "Darwin" ]
+}
+
+_fake_tty() {
+    # Execute command in fake terminal
+    # $1    - command to execute (with double-quotes escaped)
+
+    # using script command to simulate fake tty
+    # stty raw isig -echo -onlcr makes sure input is not processed and goes directly to the command
+    # the script command differs between Linux and OSX
+    # see https://serverfault.com/a/474243 and https://stackoverflow.com/a/41752647/12861599
+    if _is_osx; then
+        script -Fq /dev/null "stty raw isig -echo -onlcr; $1" 2>/dev/null
+    else
+        script -qfc "stty raw isig -echo -onlcr; $1" /dev/null 2>/dev/null
+    fi
+}
+
+_fake_tty_with_input() (
+    # Execute command in fake terminal that expects input at stdin
+    # $1    - command to execute (with double-quotes escaped)
+
+    ppid="$(exec sh -c 'echo "$PPID"')" # get subshell pid
+
+    (
+        cat
+        _killall "$ppid" # send SIGINT to kill everything in this subshell
+    ) | _fake_tty "$1"
+)
+
+_read_char() {
+    # Read single character from stdin
+
+    char="$(
+        dd bs=1 count=1 2>/dev/null
+        echo ~
+    )"               # dd reads one character at a time, but we need to echo something out
+    char="${char%~}" # strip the tilde
+
+    printf "%s" "$char"
+}
+
+_read_line() {
+    # Read one line with default IFS
+
+    read -r line
+    printf "%s" "$line"
+}
+
+_skip_read() {
+    _read_line >/dev/null
+}
+
+_is_symbol() {
+    # Check if input is a whole symbol
+    # $1    - input
+
+    [ "$(printf '%s' "$1" | wc -m)" -gt 0 ]
+}
+
 _process_children() {
     # Get all children of a process
     # $1    - process pid
@@ -45,6 +109,70 @@ _mili_to_seconds() {
     # $1    - time value in miliseconds
 
     printf '%s\n' "$1/1000" | bc -sl | tr -d '\n'
+}
+
+_decimal_to_hex() {
+    # Convert decimal value to hex (without '0x' prefix)
+    # $1    - decimal value
+
+    printf '%X' "$1"
+}
+
+_hex_to_decimal() {
+    # Convert hex value to decimal
+    # $1    - hex value (without '0x' prefix)
+
+    printf '%d' "0x$1"
+}
+
+_note_to_frequency() {
+    # Convert MIDI note to frequency
+    # $1    - MIDI note number
+
+    awk "BEGIN{printf(\"%.2f\", 2^(($1 - 69) / 12) * 440)}"
+}
+
+_key_to_frequency() {
+    # Convert key to frequency using FL Studio layout
+    # $1    - key
+
+    case "$key" in
+    z) printf "%s" '261.63' ;;
+    x) printf "%s" '293.66' ;;
+    c) printf "%s" '329.63' ;;
+    v) printf "%s" '349.23' ;;
+    b) printf "%s" '392.00' ;;
+    n) printf "%s" '440.00' ;;
+    m) printf "%s" '493.88' ;;
+    ,) printf "%s" '523.25' ;;
+    .) printf "%s" '587.33' ;;
+    /) printf "%s" '659.25' ;;
+    s) printf "%s" '277.18' ;;
+    d) printf "%s" '311.13' ;;
+    g) printf "%s" '369.99' ;;
+    h) printf "%s" '415.30' ;;
+    j) printf "%s" '466.16' ;;
+    l) printf "%s" '554.37' ;;
+    \;) printf "%s" '622.25' ;;
+    q) printf "%s" '523.25' ;;
+    w) printf "%s" '587.33' ;;
+    e) printf "%s" '659.25' ;;
+    r) printf "%s" '698.46' ;;
+    t) printf "%s" '783.99' ;;
+    y) printf "%s" '880.00' ;;
+    u) printf "%s" '987.77' ;;
+    i) printf "%s" '1046.50' ;;
+    o) printf "%s" '1174.66' ;;
+    p) printf "%s" '1318.51' ;;
+    2) printf "%s" '554.37' ;;
+    3) printf "%s" '622.25' ;;
+    5) printf "%s" '739.99' ;;
+    6) printf "%s" '830.61' ;;
+    7) printf "%s" '932.33' ;;
+    9) printf "%s" '1108.73' ;;
+    0) printf "%s" '1244.51' ;;
+    *) return 1 ;;
+    esac
 }
 
 _safe_variable_name() {
@@ -113,61 +241,18 @@ EOF
     previous_frequency=''
     while true; do
 
-        # read one characters at a time until whole symbol is read (some have more characters, e.g. \e)
+        # read one character at a time until whole symbol is read (some have more characters, e.g. \e)
         key=''
-        while [ "$(printf '%s' "$key" | wc -m)" -eq 0 ]; do
-            char=''
-            char="$(
-                dd bs=1 count=1 2>/dev/null
-                echo ~
-            )"               # dd reads one character at a time, but we need to echo something out
-            char="${char%~}" # strip the tilde
-            [ -z "$char" ] && [ -n "$previous_frequency" ] && {
+        while ! _is_symbol "$key"; do
+            char="$(_read_char)"
+            if [ -z "$char" ] && [ -n "$previous_frequency" ]; then
                 _send_end "$previous_frequency"
                 previous_frequency=''
-            }               # timeout
+            fi              # timeout
             key="$key$char" # concat characters
         done
 
-        # FL Studio keyboard layout
-        # note to frequencies mapping from https://pages.mtu.edu/~suits/notefreqs.html
-        case "$key" in
-        z) frequency='261.63' ;;
-        x) frequency='293.66' ;;
-        c) frequency='329.63' ;;
-        v) frequency='349.23' ;;
-        b) frequency='392.00' ;;
-        n) frequency='440.00' ;;
-        m) frequency='493.88' ;;
-        ,) frequency='523.25' ;;
-        .) frequency='587.33' ;;
-        /) frequency='659.25' ;;
-        s) frequency='277.18' ;;
-        d) frequency='311.13' ;;
-        g) frequency='369.99' ;;
-        h) frequency='415.30' ;;
-        j) frequency='466.16' ;;
-        l) frequency='554.37' ;;
-        \;) frequency='622.25' ;;
-        q) frequency='523.25' ;;
-        w) frequency='587.33' ;;
-        e) frequency='659.25' ;;
-        r) frequency='698.46' ;;
-        t) frequency='783.99' ;;
-        y) frequency='880.00' ;;
-        u) frequency='987.77' ;;
-        i) frequency='1046.50' ;;
-        o) frequency='1174.66' ;;
-        p) frequency='1318.51' ;;
-        2) frequency='554.37' ;;
-        3) frequency='622.25' ;;
-        5) frequency='739.99' ;;
-        6) frequency='830.61' ;;
-        7) frequency='932.33' ;;
-        9) frequency='1108.73' ;;
-        0) frequency='1244.51' ;;
-        *) continue ;;
-        esac
+        ! frequency="$(_key_to_frequency "$key")" && continue # key not mapped
 
         # emit note events only when symbols changed
         if [ "$frequency" != "$previous_frequency" ]; then
