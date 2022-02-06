@@ -22,8 +22,9 @@ _process_children() {
 _killall() {
     # Kill the process and all of its children
     # $1    - process pid
+    # $2    - signal id (optional, defaults to -13)
 
-    kill -13 -- "$1" $(_process_children "$1") >/dev/null 2>&1 # SIGPIPE should not print exit message
+    kill "${2:--2}" -- "$1" $(_process_children "$1") >/dev/null 2>&1
 }
 
 _normalize_number() {
