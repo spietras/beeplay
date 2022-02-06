@@ -287,6 +287,70 @@ emit_sheet() {
     done
 }
 
+emit_midistream() {
+    # Emit note events from MIDI stream to stdout
+    # $1    - ID of channel to follow (optional, 1-16 range, defaults to 1)
+
+    channel="$(_decimal_to_hex $((${1:-1} - 1)))"
+
+    # parsing of binary MIDI stream is happening below
+    # for specification of MIDI streams see http://midi.teragonaudio.com/tech/midispec.htm
+    #
+    # events from one channel only are captured, rest is ignored
+    # running status is supported
+    #
+    # note_on and note_off messages are converted to beeplay commands
+    # they are sent to output immediately so input should appear at proper time
+    #
+    # hexdump is decoding binary data into hexadecimal bytes
+    # however hexdump doesn't buffer output only in interactive terminals
+    # so to have live processing we need to execute hexdump in a fake tty
+
+    last_code='' # for running status
+
+    _fake_tty_with_input "hexdump -v -e '/1 \"%02X\n\"'" |
+        while read -r byte; do
+            dec="$(_hex_to_decimal "$byte")"
+            [ "$dec" -lt 128 ] && code="$last_code" || code="$byte"
+            case "$code" in
+            "8$channel" | "9$channel") # note_on and note_off
+                if [ "$dec" -lt 128 ]; then
+                    read -r velocity
+                    note="$dec"
+                else
+                    read -r note
+                    read -r velocity
+                    note="$(_hex_to_decimal "$note")"
+                fi
+                frequency="$(_note_to_frequency "$note")"
+                if [ "$velocity" = 00 ] || [ "$code" = 80 ]; then
+                    _send_end "$frequency"
+                else
+                    _send_start "$frequency"
+                fi
+                last_code="$code"
+                ;;
+            8? | 9? | A? | B? | E? | F2) # two data bytes
+                if [ "$dec" -lt 128 ]; then _skip_read; else
+                    _skip_read
+                    _skip_read
+                fi
+                last_code="$code"
+                ;;
+            C? | D? | F1 | F3) # one data byte
+                ! [ "$dec" -lt 128 ] && _skip_read
+                last_code="$code"
+                ;;
+            F0) # system exclusive
+                while [ "$(_hex_to_decimal "$byte")" -lt 128 ]; do
+                    _skip_read
+                done
+                last_code="$byte"
+                ;;
+            esac
+        done
+}
+
 ################################################## BUNDLED SINGLE NOTE FUNCTIONS ##################################################
 
 note_print() {
