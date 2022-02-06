@@ -342,4 +342,6 @@ beeplay() (
             eval "pids_$frequency_safe=''"
         fi
     done
+
+    kill "$ppid" # kill self to invoke trap and clean
 )
