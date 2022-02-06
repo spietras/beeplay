@@ -338,7 +338,7 @@ beeplay() (
             eval "pids_$frequency_safe='$!'" # save pid of launched process, associating it with frequency
         # if end command and note is playing then kill it
         elif [ "$command" = "$END_CMD" ] && [ -n "$pid" ]; then
-            _killall "$pid" # kill all children just in case
+            _killall "$pid" -9 # kill all children just in case, SIGKILL to be fast
             eval "pids_$frequency_safe=''"
         fi
     done
