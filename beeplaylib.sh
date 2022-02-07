@@ -19,13 +19,13 @@ _fake_tty() {
     # $1    - command to execute (with double-quotes escaped)
 
     # using script command to simulate fake tty
-    # stty raw isig -echo -onlcr makes sure input is not processed and goes directly to the command
+    # stty raw -echo -onlcr makes sure input is not processed and goes directly to the command
     # the script command differs between Linux and OSX
     # see https://serverfault.com/a/474243 and https://stackoverflow.com/a/41752647/12861599
     if _is_osx; then
-        script -Fq /dev/null "stty raw isig -echo -onlcr; $1" 2>/dev/null
+        script -Fq /dev/null "stty raw -echo -onlcr; $1" 2>/dev/null
     else
-        script -qfc "stty raw isig -echo -onlcr; $1" /dev/null 2>/dev/null
+        script -qfc "stty raw -echo -onlcr; $1" /dev/null 2>/dev/null
     fi
 }
 
