@@ -502,27 +502,6 @@ EOF
     $resets
 )
 
-emit_sheet() {
-    # Emit note events from sheet file to stdout
-
-    ifs_val=' 	
-' # literal space, literal tab, literal newline
-
-    # second condition is for the last line when stream ends with EOF instead of newline
-    # in that case read returns nonzero but delay should be set
-    while IFS="$ifs_val" read -r frequency length delay repeats || [ -n "$delay" ]; do
-        i=1
-        end="${repeats:-1}"
-        while [ $i -le "$end" ]; do
-            _send_start "$frequency"
-            sleep "$(_mili_to_seconds "$length")"
-            _send_end "$frequency"
-            sleep "$(_mili_to_seconds "$delay")"
-            i=$((i + 1))
-        done
-    done
-}
-
 emit_midistream() {
     # Emit note events from MIDI stream to stdout
     # $1    - ID of channel to follow (optional, 1-16 range, defaults to 1)
