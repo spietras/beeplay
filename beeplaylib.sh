@@ -61,7 +61,38 @@ _read_line() {
 }
 
 _skip_read() {
+    # Read once and discard
+
     _read_line >/dev/null
+}
+
+_skip_n_read() {
+    # Read n times and discard
+    # $1    - how many times to read
+
+    i="$1"
+    while [ "$i" -gt 0 ]; do
+        _skip_read
+        i=$((i - 1))
+    done
+}
+
+_read_vlq() {
+    # Read VLQ number from hex bytes in stdin
+    # Number is printed to stdout and number of bytes is returned
+
+    i=0
+    value=0
+    while :; do
+        read -r byte
+        i=$((i + 1))
+        byte_dec=$(_hex_to_decimal "$byte")
+        value=$(((value << 7) | (byte_dec & 0x7F)))
+        ! [ $((byte_dec & 0x80)) -eq 128 ] && break
+    done
+
+    printf '%s' "$value"
+    return "$i"
 }
 
 _is_symbol() {
@@ -107,11 +138,10 @@ _normalize_number() {
                             s/[^0-9\.]*//g'
 }
 
-_mili_to_seconds() {
-    # Convert miliseconds to seconds
-    # $1    - time value in miliseconds
+_calculate() {
+    # Calculate with bc
 
-    printf '%s\n' "$1/1000" | bc -sl | tr -d '\n'
+    printf '%s\n' "$1" | bc -sl | tr -d '\n'
 }
 
 _decimal_to_hex() {
@@ -126,6 +156,20 @@ _hex_to_decimal() {
     # $1    - hex value (without '0x' prefix)
 
     printf '%d' "0x$1"
+}
+
+_hex_to_octal() {
+    # Convert hex value to octal (without '0' prefix)
+    # $1    - hex value (without '0x' prefix)
+
+    printf '%o' "0x$1"
+}
+
+_raw_print() {
+    # Print raw data
+    # $1    - data to be printed
+
+    printf '%b' "$1"
 }
 
 _note_to_frequency() {
@@ -207,7 +251,196 @@ _send_end() {
 }
 
 _sleep_infinity() {
-    while true; do sleep 86400; done # blocks for 1 day in each iteration
+    while :; do sleep 86400; done # blocks for 1 day in each iteration
+}
+
+_read_midi_header() {
+    # Read MIDI time division from header
+
+    # MThd
+    read -r byte1
+    read -r byte2
+    read -r byte3
+    read -r byte4
+    ! [ "$byte1$byte2$byte3$byte4" = 4D546864 ] && return 1
+    # skip length, format and number of tracks
+    i=0
+    while [ "$i" -lt 8 ]; do
+        _skip_read
+        i=$((i + 1))
+    done
+    # time division
+    read -r byte1
+    read -r byte2
+    _hex_to_decimal "$byte1$byte2"
+}
+
+_read_midi_track_header() {
+    # Read MIDI track length from track header
+
+    # MTrk
+    read -r byte1
+    read -r byte2
+    read -r byte3
+    read -r byte4
+    ! [ "$byte1$byte2$byte3$byte4" = 4D54726B ] && return 1
+    # length
+    read -r byte1
+    read -r byte2
+    read -r byte3
+    read -r byte4
+    _hex_to_decimal "$byte1$byte2$byte3$byte4"
+}
+
+_ppqn_to_bpm() {
+    # Convert PPQN to BPM
+    # $1    - PPQN value
+
+    _calculate "60000000 / $1"
+}
+
+_ticks_to_seconds() {
+    # Convert MIDI ticks to seconds
+    # $1    - ticks
+    # $2    - bpm
+    # $3    - time division
+
+    _calculate "$1 * 60 / ($2 * $3)"
+}
+
+_stream_midi_track() {
+    # Stream events from single MIDI track hex data
+    # $1    - time division
+    # $2    - bpm (optional, defaults to 120)
+
+    division="$1"
+    bpm="${2:-120}"
+
+    n="$(_read_midi_track_header)" || return 1
+    last_code='' # for running status
+    # read all bytes
+    while [ "$n" -gt 0 ]; do
+        # detla time
+        delta="$(_read_vlq)"
+        n=$((n - $?))
+        # status (or first data byte if running status)
+        read -r byte
+        n=$((n - 1))
+        dec="$(_hex_to_decimal "$byte")"
+        [ "$dec" -lt 128 ] && code="$last_code" || code="$byte"
+        case "$code" in
+        8? | 9? | A? | B? | E? | F2) # two data bytes
+            if [ "$dec" -lt 128 ]; then
+                byte1="$byte"
+                read -r byte2
+                n=$((n - 1))
+            else
+                read -r byte1
+                read -r byte2
+                n=$((n - 2))
+            fi
+            msg="$code $byte1 $byte2"
+            last_code="$code"
+            ;;
+        C? | D? | F1 | F3) # one data byte
+            if ! [ "$dec" -lt 128 ]; then
+                read -r byte
+                n=$((n - 1))
+            fi
+            msg="$code $byte"
+            last_code="$code"
+            ;;
+        F0) # system exclusive
+            msg="$code"
+            while [ "$(_hex_to_decimal "$byte")" -lt 128 ]; do
+                read -r byte
+                n=$((n - 1))
+                msg="$msg $byte"
+            done
+            last_code="$byte"
+            ;;
+        FF) # meta event
+            read -r type
+            n=$((n - 1))
+            case "$type" in
+            00) # sequence number
+                read -r num
+                n=$((n - 1))
+                if [ "$num" = 02 ]; then
+                    _skip_n_read 2
+                    n=$((n - 2))
+                fi
+                ;;
+            20 | 21) # midi channel or midi port
+                _skip_n_read 2
+                n=$((n - 2))
+                ;;
+            2F) # end of track
+                _skip_read
+                n=$((n - 1))
+                ;;
+            51) # tempo
+                _skip_read
+                read -r byte1
+                read -r byte2
+                read -r byte3
+                n=$((n - 4))
+                bpm="$(_ppqn_to_bpm "$(_hex_to_decimal "$byte1$byte2$byte3")")"
+                ;;
+            54) # smpte offset
+                _skip_n_read 6
+                n=$((n - 6))
+                ;;
+            58) # time signature
+                _skip_n_read 5
+                n=$((n - 5))
+                ;;
+            59) # key signature
+                _skip_n_read 3
+                n=$((n - 3))
+                ;;
+            *)
+                len="$(_read_vlq)"
+                n=$((n - $? - len))
+                _skip_n_read "$len"
+                ;;
+            esac
+            msg='F0 F7' # dummy message
+            ;;
+        esac
+        # send message with delta time in seconds (e.g. '0.01 90 3E 60')
+        echo "$(_ticks_to_seconds "$delta" "$bpm" "$division") $msg"
+    done
+}
+
+_stream_midifile() {
+    # Stream events from MIDI file to stdout
+    # $1    - ID of track to follow (optional, defaults to 0)
+
+    track="${1:-0}"
+
+    # see http://midi.teragonaudio.com/tech/midifile.htm
+    # works best with type 0 MIDI files
+
+    hexdump -v -e '/1 "%02X\n"' |
+        (
+            division="$(_read_midi_header)" || exit
+            while [ "$track" -gt 0 ]; do
+                length="$(_read_midi_track_header)" || exit
+                _skip_n_read "$length"
+                track=$((track - 1))
+            done
+            _stream_midi_track "$division"
+        ) |
+        while read -r delta_time hex_msg; do
+            octal_msg=''
+            # see https://stackoverflow.com/a/54792587/12861599
+            for hex in $(echo "$hex_msg"); do
+                octal_msg="$octal_msg\0$(_hex_to_octal "$hex")"
+            done
+            sleep "$delta_time"
+            _raw_print "$octal_msg"
+        done
 }
 
 ################################################## BUNDLED EMITTER FUNCTIONS ######################################################
@@ -242,7 +475,7 @@ EOF
     trap 'rc=$?; trap "" HUP INT QUIT ABRT ALRM TERM; '"$resets"' return $rc' HUP INT QUIT ABRT ALRM TERM
 
     previous_frequency=''
-    while true; do
+    while :; do
 
         # read one character at a time until whole symbol is read (some have more characters, e.g. \e)
         key=''
@@ -334,9 +567,10 @@ emit_midistream() {
                 last_code="$code"
                 ;;
             8? | 9? | A? | B? | E? | F2) # two data bytes
-                if [ "$dec" -lt 128 ]; then _skip_read; else
+                if [ "$dec" -lt 128 ]; then
                     _skip_read
-                    _skip_read
+                else
+                    _skip_n_read 2
                 fi
                 last_code="$code"
                 ;;
@@ -346,12 +580,23 @@ emit_midistream() {
                 ;;
             F0) # system exclusive
                 while [ "$(_hex_to_decimal "$byte")" -lt 128 ]; do
-                    _skip_read
+                    read -r byte
                 done
                 last_code="$byte"
                 ;;
             esac
         done
+}
+
+emit_midifile() {
+    # Emit note events from MIDI file to stdout
+    # $1    - ID of track to follow (optional, defaults to 0)
+    # $2    - ID of channel to follow (optional, 1-16 range, defaults to 1)
+
+    track="${1:-0}"
+    channel="${2:-1}"
+
+    _stream_midifile "$track" | emit_midistream "$channel"
 }
 
 ################################################## BUNDLED SINGLE NOTE FUNCTIONS ##################################################
@@ -400,7 +645,7 @@ beeplay() (
         if [ "$command" = "$START_CMD" ] && [ -z "$pid" ]; then
             (
                 trap 'exit' HUP INT QUIT ABRT ALRM TERM
-                while true; do $play_note "$frequency"; done
+                while :; do $play_note "$frequency"; done
             ) &                              # play note in background and repeat (if non-blocking function is used)
             eval "pids_$frequency_safe='$!'" # save pid of launched process, associating it with frequency
         # if end command and note is playing then kill it
