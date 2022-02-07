@@ -7,6 +7,7 @@ print_usage() {
 
     cat <<EOF
 Usage: $0 [-n NAME]
+Play notes with your keyboard!
 
     -n, --note              note-playing function name (possible values: 'play', 'bell', 'print', default: 'play')
 EOF
@@ -14,22 +15,26 @@ EOF
 
 # parse args
 
-function='note_play'
+function='play'
+
+unparsed=''
 
 for arg in "$@"; do
     case $arg in
     -n | --name)
         shift
-        function="note_$1"
+        function="$1"
         ;;
     -h | --help)
         print_usage
         exit
         ;;
-    *) set -- "$@" "$arg" ;; # leave positional arguments
+    *) unparsed="$unparsed $1" ;;
     esac
     shift
 done
+
+set -- $unparsed
 
 # get script directory, works in most simple cases
 scriptdir="$(dirname -- "$0")"
@@ -38,4 +43,4 @@ scriptdir="$(dirname -- "$0")"
 # shellcheck disable=SC1090
 . "$scriptdir/beeplaylib.sh"
 
-emit_tty | beeplay "$function"
+emit_tty | beeplay "note_$function"
