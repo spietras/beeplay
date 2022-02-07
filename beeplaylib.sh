@@ -88,7 +88,10 @@ _killall() {
     # $1    - process pid
     # $2    - signal id (optional, defaults to -13)
 
-    kill "${2:--2}" -- "$1" $(_process_children "$1") >/dev/null 2>&1
+    pids="$1 $(_process_children "$1")"
+
+    kill "${2:--2}" -- $pids >/dev/null 2>&1
+    wait $pids >/dev/null 2>&1 # https://stackoverflow.com/a/5722874/12861599
 }
 
 _normalize_number() {
