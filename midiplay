@@ -1,0 +1,76 @@
+#!/bin/sh
+
+# helper functions
+
+print_usage() {
+    # Print script usage
+
+    cat <<EOF
+Usage: $0 [-p PORT] [-f FILE] [-t TRACK] [-c CHANNEL] [-n NAME]
+Play notes using MIDI streams or MIDI files.
+
+    -p, --port              use given sndio rmidi port instead of stdin
+    -f, --file              use given MIDI file instead of stdin, overrides port
+    -t, --track             ID of track to follow (only used in case of a file, default: 0)
+    -c, --channel           ID of channel to follow (1-16 range, default: 1)
+    -n, --note              note-playing function name (possible values: 'play', 'bell', 'print', default: 'play')
+EOF
+}
+
+# parse args
+
+port=''
+file=''
+track='0'
+channel='1'
+function='play'
+
+unparsed=''
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+    -p | --port)
+        shift
+        port="$1"
+        ;;
+    -f | --file)
+        shift
+        file="$1"
+        ;;
+    -t | --track)
+        shift
+        track="$1"
+        ;;
+    -c | --channel)
+        shift
+        channel="$1"
+        ;;
+    -n | --name)
+        shift
+        function="$1"
+        ;;
+    -h | --help)
+        print_usage
+        exit
+        ;;
+    *) unparsed="$unparsed $1" ;;
+    esac
+    shift
+done
+
+set -- $unparsed
+
+# get script directory, works in most simple cases
+scriptdir="$(dirname -- "$0")"
+
+# import library functions
+# shellcheck disable=SC1090
+. "$scriptdir/beeplaylib.sh"
+
+if [ -n "$file" ]; then
+    emit_midifile "$track" "$channel" <"$file" | beeplay "note_$function"
+elif [ -n "$port" ]; then
+    midicat -q "rmidi/$port" -o - | emit_midistream "$channel" | beeplay "note_$function"
+else
+    emit_midistream "$channel" | beeplay "note_$function"
+fi
