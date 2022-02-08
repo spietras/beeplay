@@ -2,7 +2,7 @@
 
 turn your crappy PC into a music player 🎶
 
-# Features
+## Features
 
 - Unix only
 - POSIX-compliant
@@ -10,7 +10,7 @@ turn your crappy PC into a music player 🎶
 - highly extensible
 - supports tty and MIDI as input
 
-# `keyplay`
+## `keyplay`
 
 You can play notes with your keyboard using `keyplay`:
 
@@ -22,7 +22,7 @@ Keyboard layout is similar to [the one used in FL Studio](https://www.image-line
 By default [the `play` command from `sox`](http://sox.sourceforge.net/) is used to play notes.
 See `./keyplay --help` for more info.
 
-# `midiplay`
+## `midiplay`
 
 You can play notes from MIDI files:
 
@@ -40,7 +40,7 @@ Only one track and one channel can be played, by default it's track 0 and channe
 Also by default [the `play` command from `sox`](http://sox.sourceforge.net/) is used to play notes.
 See `./midiplay --help` for more info.
 
-# Usage as library
+## Usage as library
 
 Just copy `beeplaylib.sh` to your project, source it and use the `beeplay` function to play music.
 
